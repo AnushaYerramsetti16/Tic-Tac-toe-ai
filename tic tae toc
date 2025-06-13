@@ -1,0 +1,146 @@
+import tkinter as tk
+from tkinter import messagebox
+
+# Initialize window
+window = tk.Tk()
+window.title("Tic Tac Toe (Player vs Computer)")
+window.configure(bg="#fff3e0")
+
+# Game state
+player = "X"
+computer = "O"
+board = [["" for _ in range(3)] for _ in range(3)]
+buttons = [[None for _ in range(3)] for _ in range(3)]
+
+# Score tracking
+x_score = 0
+o_score = 0
+
+# Labels for score display
+x_score_label = tk.Label(window, text="X (You): 0", font=("Arial", 14), bg="#fff3e0", fg="#2e7d32")
+o_score_label = tk.Label(window, text="O (AI): 0", font=("Arial", 14), bg="#fff3e0", fg="#c62828")
+x_score_label.grid(row=4, column=0)
+o_score_label.grid(row=4, column=2)
+
+def update_scores():
+    x_score_label.config(text=f"X (You): {x_score}")
+    o_score_label.config(text=f"O (AI): {o_score}")
+
+def reset_board():
+    global board
+    board = [["" for _ in range(3)] for _ in range(3)]
+    for i in range(3):
+        for j in range(3):
+            buttons[i][j]["text"] = ""
+            buttons[i][j]["fg"] = "black"
+            buttons[i][j]["state"] = "normal"
+
+def check_winner(b):
+    for i in range(3):
+        if b[i][0] == b[i][1] == b[i][2] != "":
+            return b[i][0]
+        if b[0][i] == b[1][i] == b[2][i] != "":
+            return b[0][i]
+    if b[0][0] == b[1][1] == b[2][2] != "":
+        return b[0][0]
+    if b[0][2] == b[1][1] == b[2][0] != "":
+        return b[0][2]
+    return None
+
+def is_draw(b):
+    return all(cell != "" for row in b for cell in row)
+
+def minimax(b, is_max):
+    winner = check_winner(b)
+    if winner == computer:
+        return 1
+    elif winner == player:
+        return -1
+    elif is_draw(b):
+        return 0
+
+    if is_max:
+        best_score = -float('inf')
+        for i in range(3):
+            for j in range(3):
+                if b[i][j] == "":
+                    b[i][j] = computer
+                    score = minimax(b, False)
+                    b[i][j] = ""
+                    best_score = max(score, best_score)
+        return best_score
+    else:
+        best_score = float('inf')
+        for i in range(3):
+            for j in range(3):
+                if b[i][j] == "":
+                    b[i][j] = player
+                    score = minimax(b, True)
+                    b[i][j] = ""
+                    best_score = min(score, best_score)
+        return best_score
+
+def computer_move():
+    best_score = -float('inf')
+    move = None
+    for i in range(3):
+        for j in range(3):
+            if board[i][j] == "":
+                board[i][j] = computer
+                score = minimax(board, False)
+                board[i][j] = ""
+                if score > best_score:
+                    best_score = score
+                    move = (i, j)
+    if move:
+        i, j = move
+        board[i][j] = computer
+        buttons[i][j]["text"] = computer
+        buttons[i][j]["fg"] = "#c62828"
+        buttons[i][j]["state"] = "disabled"
+        check_game_over()
+
+def check_game_over():
+    global x_score, o_score
+    winner = check_winner(board)
+    if winner:
+        if winner == player:
+            x_score += 1
+        else:
+            o_score += 1
+        update_scores()
+        messagebox.showinfo("Game Over", f"{winner} wins!")
+        reset_board()
+    elif is_draw(board):
+        messagebox.showinfo("Game Over", "It's a draw!")
+        reset_board()
+
+def on_click(i, j):
+    if board[i][j] == "":
+        board[i][j] = player
+        buttons[i][j]["text"] = player
+        buttons[i][j]["fg"] = "#2e7d32"
+        buttons[i][j]["state"] = "disabled"
+        check_game_over()
+        if not check_winner(board) and not is_draw(board):
+            computer_move()
+
+# Create board buttons
+for i in range(3):
+    for j in range(3):
+        buttons[i][j] = tk.Button(
+            window, text="", font=("Arial", 24), width=5, height=2,
+            bg="#ffe0b2", activebackground="#ffcc80",
+            highlightbackground="#ff9800", highlightthickness=2,
+            command=lambda i=i, j=j: on_click(i, j)
+        )
+        buttons[i][j].grid(row=i, column=j, padx=5, pady=5)
+
+# Restart Game Button
+restart_btn = tk.Button(window, text="🔁 Restart Game", font=("Arial", 14), width=15,
+                        bg="#fb8c00", fg="white", activebackground="#ef6c00",
+                        command=reset_board)
+restart_btn.grid(row=3, column=0, columnspan=3, pady=10)
+
+# Start GUI loop
+window.mainloop()
